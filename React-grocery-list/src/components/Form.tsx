@@ -1,28 +1,39 @@
 import { Field, FieldValue, FieldValues, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import categories from "./categories";
 
 const schema = z.object({
   name: z.string().min(3, { message: "Require at least 3 characters" }),
   amount: z
     .number({ invalid_type_error: "amount needs to be specified" })
     .min(1, { message: "require at least 1 item" }),
-  category: z.string(),
+  category: z.enum(categories, {
+    errorMap: () => ({ message: "Category is required" }),
+  }),
 });
 
 type FormData = z.infer<typeof schema>;
 
-const Form = () => {
+interface Props {
+  onSubmit: (data: FormData) => void;
+}
+
+const Form = ({ onSubmit }: Props) => {
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
-  const onSubmit = (data: FieldValues) => console.log(data);
-
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
+    <form
+      onSubmit={handleSubmit((data) => {
+        onSubmit(data);
+        reset();
+      })}
+    >
       <div className="mb-3">
         <label htmlFor="name" className="form-label">
           Name
@@ -58,10 +69,16 @@ const Form = () => {
           id="category"
           className="form-control"
         >
-          <option>Meats</option>
-          <option>Vegtables</option>
-          <option>Fruits</option>
+          <option value=""></option>
+          {categories.map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
+          ))}
         </select>
+        {errors.category && (
+          <p className="text-danger">{errors.category.message}</p>
+        )}
       </div>
       <button className="btn btn-primary" type="submit">
         Add to list
